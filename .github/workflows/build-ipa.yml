@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       game_url:
-        description: 'Прямая ссылка на файл игры (.nup или .nsp)'
+        description: 'Direct download URL for game container (.nup or .nsp)'
         required: false
         default: ''
       game_language:
-        description: 'Язык игры (ru / en)'
+        description: 'Game language (ru / en)'
         required: true
         default: 'ru'
 
@@ -28,10 +28,10 @@ jobs:
 
       - name: Setup Python dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install lz4 "capstone>=5,<6" fonttools nsz zbic
+          python3 -m pip install --upgrade pip --break-system-packages
+          python3 -m pip install --break-system-packages lz4 "capstone>=5,<6" fonttools nsz zbic "backports.zstd; python_version < '3.14'"
 
-      - name: Download game container (if URL provided)
+      - name: Download game container
         if: ${{ github.event.inputs.game_url != '' }}
         run: |
           mkdir -p input_game
@@ -39,7 +39,6 @@ jobs:
 
       - name: Build IPA with Russian Language
         run: |
-          echo "Запуск скрипта сборки..."
           python3 scripts/build_ipa_from_nsp.py input_game --language ${{ github.event.inputs.game_language }}
 
       - name: Upload IPA Artifact
