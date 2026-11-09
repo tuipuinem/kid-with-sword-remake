@@ -1,0 +1,51 @@
+name: Build Zelda IPA on macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      game_url:
+        description: 'Прямая ссылка на файл игры (.nup или .nsp)'
+        required: false
+        default: ''
+      game_language:
+        description: 'Язык игры (ru / en)'
+        required: true
+        default: 'ru'
+
+jobs:
+  build-ipa:
+    runs-on: macos-14
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Homebrew dependencies
+        run: |
+          brew install xcodegen zstd glslang
+          brew install --cask dotnet-sdk
+
+      - name: Setup Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install lz4 "capstone>=5,<6" fonttools nsz zbic
+
+      - name: Download game container (if URL provided)
+        if: ${{ github.event.inputs.game_url != '' }}
+        run: |
+          mkdir -p input_game
+          curl -L -o "input_game/game.nup" "${{ github.event.inputs.game_url }}"
+
+      - name: Build IPA with Russian Language
+        run: |
+          echo "Запуск скрипта сборки..."
+          python3 scripts/build_ipa_from_nsp.py input_game --language ${{ github.event.inputs.game_language }}
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Zelda-Ocarina-Remake-IPA
+          path: |
+            *.ipa
+            */*.ipa
